@@ -1,0 +1,381 @@
+# -*- coding: utf-8 -*-
+"""
+Vietnamese Font Converter - Clipboard Tool
+Hỗ trợ: TCVN3 → Unicode, VNI → Unicode
+"""
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+import threading
+import time
+
+# ===================================================================
+# BẢNG MÃ TCVN3
+# ===================================================================
+
+TCVN3_TABLE = [
+    0x41, 0x61, 0xB8, 0xB8, 0xB5, 0xB5, 0xB6, 0xB6, 0xB7, 0xB7, 0xB9, 0xB9,
+    0xA2, 0xA9, 0xCA, 0xCA, 0xC7, 0xC7, 0xC8, 0xC8, 0xC9, 0xC9, 0xCB, 0xCB,
+    0xA1, 0xA8, 0xBE, 0xBE, 0xBB, 0xBB, 0xBC, 0xBC, 0xBD, 0xBD, 0xC6, 0xC6,
+    0x42, 0x62, 0x43, 0x63, 0x44, 0x64,
+    0xA7, 0xAE,
+    0x45, 0x65, 0xD0, 0xD0, 0xCC, 0xCC, 0xCE, 0xCE, 0xCF, 0xCF, 0xD1, 0xD1,
+    0xA3, 0xAA, 0xD5, 0xD5, 0xD2, 0xD2, 0xD3, 0xD3, 0xD4, 0xD4, 0xD6, 0xD6,
+    0x46, 0x66, 0x47, 0x67, 0x48, 0x68,
+    0x49, 0x69, 0xDD, 0xDD, 0xD7, 0xD7, 0xD8, 0xD8, 0xDC, 0xDC, 0xDE, 0xDE,
+    0x4A, 0x6A, 0x4B, 0x6B, 0x4C, 0x6C, 0x4D, 0x6D, 0x4E, 0x6E,
+    0x4F, 0x6F, 0xE3, 0xE3, 0xDF, 0xDF, 0xE1, 0xE1, 0xE2, 0xE2, 0xE4, 0xE4,
+    0xA4, 0xAB, 0xE8, 0xE8, 0xE5, 0xE5, 0xE6, 0xE6, 0xE7, 0xE7, 0xE9, 0xE9,
+    0xA5, 0xAC, 0xED, 0xED, 0xEA, 0xEA, 0xEB, 0xEB, 0xEC, 0xEC, 0xEE, 0xEE,
+    0x50, 0x70, 0x51, 0x71, 0x52, 0x72, 0x53, 0x73, 0x54, 0x74,
+    0x55, 0x75, 0xF3, 0xF3, 0xEF, 0xEF, 0xF1, 0xF1, 0xF2, 0xF2, 0xF4, 0xF4,
+    0xA6, 0xAD, 0xF8, 0xF8, 0xF5, 0xF5, 0xF6, 0xF6, 0xF7, 0xF7, 0xF9, 0xF9,
+    0x56, 0x76, 0x57, 0x77, 0x58, 0x78,
+    0x59, 0x79, 0xFD, 0xFD, 0xFA, 0xFA, 0xFB, 0xFB, 0xFC, 0xFC, 0xFE, 0xFE,
+    0x5A, 0x7A,
+    0x80, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88,
+    0x89, 0x8A, 0x8B, 0x8C, 0x8E, 0x91, 0x92, 0x93,
+    0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B,
+    0x9C, 0x9E, 0x9F,
+]
+
+UNICODE_TABLE = [
+    0x41, 0x61, 0xC1, 0xE1, 0xC0, 0xE0, 0x1EA2, 0x1EA3, 0xC3, 0xE3, 0x1EA0, 0x1EA1,
+    0x42, 0xE2, 0x1EA4, 0x1EA5, 0x1EA6, 0x1EA7, 0x1EA8, 0x1EA9, 0x1EAA, 0x1EAB, 0x1EAC, 0x1EAD,
+    0x102, 0x103, 0x1EAE, 0x1EAF, 0x1EB0, 0x1EB1, 0x1EB2, 0x1EB3, 0x1EB4, 0x1EB5, 0x1EB6, 0x1EB7,
+    0x42, 0x62, 0x43, 0x63, 0x44, 0x64,
+    0x110, 0x111,
+    0x45, 0x65, 0xC9, 0xE9, 0xC8, 0xE8, 0x1EBA, 0x1EBB, 0x1EBC, 0x1EBD, 0x1EB8, 0x1EB9,
+    0xCA, 0xEA, 0x1EBE, 0x1EBF, 0x1EC0, 0x1EC1, 0x1EC2, 0x1EC3, 0x1EC4, 0x1EC5, 0x1EC6, 0x1EC7,
+    0x46, 0x66, 0x47, 0x67, 0x48, 0x68,
+    0x49, 0x69, 0xCD, 0xED, 0xCC, 0xEC, 0x1EC8, 0x1EC9, 0x128, 0x129, 0x1ECA, 0x1ECB,
+    0x4A, 0x6A, 0x4B, 0x6B, 0x4C, 0x6C, 0x4D, 0x6D, 0x4E, 0x6E,
+    0x4F, 0x6F, 0xD3, 0xF3, 0xD2, 0xF2, 0x1ECE, 0x1ECF, 0xD5, 0xF5, 0x1ECC, 0x1ECD,
+    0xD4, 0xF4, 0x1ED0, 0x1ED1, 0x1ED2, 0x1ED3, 0x1ED4, 0x1ED5, 0x1ED6, 0x1ED7, 0x1ED8, 0x1ED9,
+    0x1A0, 0x1A1, 0x1EDA, 0x1EDB, 0x1EDC, 0x1EDD, 0x1EDE, 0x1EDF, 0x1EE0, 0x1EE1, 0x1EE2, 0x1EE3,
+    0x50, 0x70, 0x51, 0x71, 0x52, 0x72, 0x53, 0x73, 0x54, 0x74,
+    0x55, 0x75, 0xDA, 0xFA, 0xD9, 0xF9, 0x1EE6, 0x1EE7, 0x168, 0x169, 0x1EE4, 0x1EE5,
+    0x1AF, 0x1B0, 0x1EE8, 0x1EE9, 0x1EEA, 0x1EEB, 0x1EEC, 0x1EED, 0x1EEE, 0x1EEF, 0x1EF0, 0x1EF1,
+    0x56, 0x76, 0x57, 0x77, 0x58, 0x78,
+    0x59, 0x79, 0xDD, 0xFD, 0x1EF2, 0x1EF3, 0x1EF6, 0x1EF7, 0x1EF8, 0x1EF9, 0x1EF4, 0x1EF5,
+    0x5A, 0x7A,
+    0x20AC, 0x20A1, 0x192, 0x201E, 0x2026, 0x2020, 0x2021, 0x2C6,
+    0x2030, 0x160, 0x2039, 0x152, 0x17D, 0x2018, 0x2019, 0x201C,
+    0x201D, 0x2022, 0x2013, 0x2014, 0x2DC, 0x2122, 0x161, 0x203A,
+    0x153, 0x17E, 0x178,
+]
+
+# Build lookup dict: TCVN3 byte -> Unicode codepoint (last match wins)
+_TCVN3_TO_UNI = {}
+for _i, (_t, _u) in enumerate(zip(TCVN3_TABLE, UNICODE_TABLE)):
+    _TCVN3_TO_UNI[_t] = _u
+
+# ===================================================================
+# BẢNG MÃ VNI (2-char pairs và single-char)
+# ===================================================================
+
+VNI_TWO_CHAR = {
+    # (b1, b2) -> unicode codepoint
+    (0x61,0xEA): 0x103,  (0x61,0xE2): 0xE2,   (0x65,0xE2): 0xEA,   (0x6F,0xE2): 0xF4,
+    (0x61,0xF8): 0xE0,   (0x61,0xF9): 0xE1,   (0x61,0xFB): 0x1EA3, (0x61,0xF5): 0xE3,
+    (0x61,0xEF): 0x1EA1, (0x61,0xE8): 0x1EB1, (0x61,0xE9): 0x1EAF, (0x61,0xFA): 0x1EB3,
+    (0x61,0xFC): 0x1EB5, (0x61,0xEB): 0x1EB7, (0x61,0xE0): 0x1EA7, (0x61,0xE1): 0x1EA5,
+    (0x61,0xE5): 0x1EA9, (0x61,0xE3): 0x1EAB, (0x61,0xE4): 0x1EAD,
+    (0x65,0xF8): 0xE8,   (0x65,0xF9): 0xE9,   (0x65,0xFB): 0x1EBB, (0x65,0xF5): 0x1EBD,
+    (0x65,0xEF): 0x1EB9, (0x65,0xE0): 0x1EC1, (0x65,0xE1): 0x1EBF, (0x65,0xE5): 0x1EC3,
+    (0x65,0xE3): 0x1EC5, (0x65,0xE4): 0x1EC7,
+    (0x6F,0xF8): 0xF2,   (0x6F,0xF9): 0xF3,   (0x6F,0xFB): 0x1ECF, (0x6F,0xF5): 0xF5,
+    (0x6F,0xEF): 0x1ECD, (0x6F,0xE0): 0x1ED3, (0x6F,0xE1): 0x1ED1, (0x6F,0xE5): 0x1ED5,
+    (0x6F,0xE3): 0x1ED7, (0x6F,0xE4): 0x1ED9,
+    (0xF4,0xF8): 0x1EDD, (0xF4,0xF9): 0x1EDB, (0xF4,0xFB): 0x1EDF, (0xF4,0xF5): 0x1EE1,
+    (0xF4,0xEF): 0x1EE3,
+    (0x75,0xF8): 0xF9,   (0x75,0xF9): 0xFA,   (0x75,0xFB): 0x1EE7, (0x75,0xF5): 0x169,
+    (0x75,0xEF): 0x1EE5,
+    (0xF6,0xF8): 0x1EEB, (0xF6,0xF9): 0x1EE9, (0xF6,0xFB): 0x1EED, (0xF6,0xF5): 0x1EEF,
+    (0xF6,0xEF): 0x1EF1,
+    (0x79,0xF8): 0x1EF3, (0x79,0xF9): 0xFD,   (0x79,0xFB): 0x1EF7, (0x79,0xF5): 0x1EF9,
+    # Uppercase
+    (0x41,0xCA): 0x102,  (0x41,0xC2): 0xC2,   (0x45,0xC2): 0xCA,   (0x4F,0xC2): 0xD4,
+    (0x41,0xD8): 0xC0,   (0x41,0xD9): 0xC1,   (0x41,0xDB): 0x1EA2, (0x41,0xD5): 0xC3,
+    (0x41,0xCF): 0x1EA0, (0x41,0xC8): 0x1EB0, (0x41,0xC9): 0x1EAE, (0x41,0xDA): 0x1EB2,
+    (0x41,0xDC): 0x1EB4, (0x41,0xCB): 0x1EB6, (0x41,0xC0): 0x1EA6, (0x41,0xC1): 0x1EA4,
+    (0x41,0xC5): 0x1EA8, (0x41,0xC3): 0x1EAA, (0x41,0xC4): 0x1EAC,
+    (0x45,0xD8): 0xC8,   (0x45,0xD9): 0xC9,   (0x45,0xDB): 0x1EBA, (0x45,0xD5): 0x1EBC,
+    (0x45,0xCF): 0x1EB8, (0x45,0xC0): 0x1EC0, (0x45,0xC1): 0x1EBE, (0x45,0xC5): 0x1EC2,
+    (0x45,0xC3): 0x1EC4, (0x45,0xC4): 0x1EC6,
+    (0x4F,0xD8): 0xD2,   (0x4F,0xD9): 0xD3,   (0x4F,0xDB): 0x1ECE, (0x4F,0xD5): 0xD5,
+    (0x4F,0xCF): 0x1ECC, (0x4F,0xC0): 0x1ED2, (0x4F,0xC1): 0x1ED0, (0x4F,0xC5): 0x1ED4,
+    (0x4F,0xC3): 0x1ED6, (0x4F,0xC4): 0x1ED8,
+    (0xD4,0xD8): 0x1EDC, (0xD4,0xD9): 0x1EDA, (0xD4,0xDB): 0x1EDE, (0xD4,0xD5): 0x1EE0,
+    (0xD4,0xCF): 0x1EE2,
+    (0x55,0xD8): 0xD9,   (0x55,0xD9): 0xDA,   (0x55,0xDB): 0x1EE6, (0x55,0xD5): 0x168,
+    (0x55,0xCF): 0x1EE4,
+    (0xD6,0xD8): 0x1EEA, (0xD6,0xD9): 0x1EE8, (0xD6,0xDB): 0x1EEC, (0xD6,0xD5): 0x1EEE,
+    (0xD6,0xCF): 0x1EF0,
+    (0x59,0xD8): 0x1EF2, (0x59,0xD9): 0xDD,   (0x59,0xDB): 0x1EF6, (0x59,0xD5): 0x1EF8,
+}
+
+VNI_SINGLE = {
+    0xF1: 0x111, 0xF4: 0x1A1, 0xF6: 0x1B0,
+    0xEC: 0xEC,  0xED: 0xED,  0xE6: 0x1EC9, 0xF3: 0x129, 0xF2: 0x1ECB, 0xEE: 0x1EF5,
+    0xD1: 0x110, 0xD4: 0x1A0, 0xD6: 0x1AF,
+    0xCC: 0xCC,  0xCD: 0xCD,  0xC6: 0x1EC8, 0xD3: 0x128, 0xD2: 0x1ECA, 0xCE: 0x1EF4,
+}
+
+# ===================================================================
+# CONVERSION FUNCTIONS
+# ===================================================================
+
+def tcvn3_to_unicode(text: str) -> str:
+    result = []
+    for ch in text:
+        code = ord(ch)
+        if code in _TCVN3_TO_UNI:
+            result.append(chr(_TCVN3_TO_UNI[code]))
+        else:
+            result.append(ch)
+    return ''.join(result)
+
+
+def vni_to_unicode(text: str) -> str:
+    result = []
+    i = 0
+    n = len(text)
+    while i < n:
+        c1 = ord(text[i])
+        matched = False
+        if i + 1 < n:
+            c2 = ord(text[i + 1])
+            key = (c1, c2)
+            if key in VNI_TWO_CHAR:
+                result.append(chr(VNI_TWO_CHAR[key]))
+                i += 2
+                matched = True
+        if not matched:
+            if c1 in VNI_SINGLE:
+                result.append(chr(VNI_SINGLE[c1]))
+            else:
+                result.append(text[i])
+            i += 1
+    return ''.join(result)
+
+# ===================================================================
+# GUI APP
+# ===================================================================
+
+BG        = "#0F0F13"
+PANEL     = "#17171E"
+CARD      = "#1E1E28"
+BORDER    = "#2A2A38"
+ACCENT    = "#5B6AF0"
+ACCENT2   = "#9B5BF0"
+SUCCESS   = "#3DD68C"
+TEXT_PRI  = "#F0F0FF"
+TEXT_SEC  = "#8888AA"
+FONT_MONO = ("Consolas", 10)
+FONT_UI   = ("Segoe UI", 10)
+FONT_HEAD = ("Segoe UI Semibold", 11)
+FONT_TITLE= ("Segoe UI Light", 18)
+
+
+class ConverterApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Vietnamese Font Converter")
+        self.geometry("660x560")
+        self.minsize(560, 480)
+        self.configure(bg=BG)
+        self.resizable(True, True)
+
+        # State
+        self.mode = tk.StringVar(value="tcvn3")
+        self.status_msg = tk.StringVar(value="Sẵn sàng")
+        self._flash_job = None
+
+        self._build_ui()
+        self.after(100, self._center_window)
+
+    def _center_window(self):
+        self.update_idletasks()
+        w, h = self.winfo_width(), self.winfo_height()
+        sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
+        self.geometry(f"+{(sw-w)//2}+{(sh-h)//2}")
+
+    def _build_ui(self):
+        # ── Title bar ──────────────────────────────────────
+        title_frame = tk.Frame(self, bg=BG, pady=18)
+        title_frame.pack(fill="x", padx=28)
+
+        tk.Label(title_frame, text="Viet Font", font=("Segoe UI Light", 22),
+                 fg=TEXT_PRI, bg=BG).pack(side="left")
+        tk.Label(title_frame, text=" Converter", font=("Segoe UI Light", 22),
+                 fg=ACCENT, bg=BG).pack(side="left")
+
+        # ── Mode selector ──────────────────────────────────
+        mode_frame = tk.Frame(self, bg=PANEL, bd=0)
+        mode_frame.pack(fill="x", padx=28, pady=(0, 12))
+
+        inner = tk.Frame(mode_frame, bg=PANEL, pady=10, padx=14)
+        inner.pack(fill="x")
+
+        tk.Label(inner, text="Chuyển đổi từ:", font=FONT_HEAD,
+                 fg=TEXT_SEC, bg=PANEL).pack(side="left", padx=(0,14))
+
+        for val, label, color in [
+            ("tcvn3", "TCVN3 → Unicode", ACCENT),
+            ("vni",   "VNI → Unicode",   ACCENT2),
+        ]:
+            rb = tk.Radiobutton(
+                inner, text=label, variable=self.mode, value=val,
+                font=FONT_UI, fg=TEXT_PRI, bg=PANEL,
+                activebackground=PANEL, activeforeground=color,
+                selectcolor=CARD, indicatoron=0,
+                relief="flat", bd=0, padx=14, pady=6,
+                cursor="hand2",
+            )
+            rb.pack(side="left", padx=4)
+            rb.bind("<Enter>", lambda e, w=rb, c=color: w.config(fg=c))
+            rb.bind("<Leave>", lambda e, w=rb: w.config(fg=TEXT_PRI))
+
+        # ── Text areas ─────────────────────────────────────
+        areas = tk.Frame(self, bg=BG)
+        areas.pack(fill="both", expand=True, padx=28, pady=(0,10))
+        areas.columnconfigure(0, weight=1)
+        areas.columnconfigure(1, weight=1)
+        areas.rowconfigure(1, weight=1)
+
+        # Labels
+        tk.Label(areas, text="VĂN BẢN GỐC", font=("Segoe UI Semibold", 9),
+                 fg=TEXT_SEC, bg=BG).grid(row=0, column=0, sticky="w", pady=(0,4))
+        tk.Label(areas, text="KẾT QUẢ UNICODE", font=("Segoe UI Semibold", 9),
+                 fg=TEXT_SEC, bg=BG).grid(row=0, column=1, sticky="w", pady=(0,4), padx=(10,0))
+
+        def make_textbox(parent):
+            frame = tk.Frame(parent, bg=BORDER, bd=1)
+            txt = tk.Text(
+                frame, bg=CARD, fg=TEXT_PRI, insertbackground=ACCENT,
+                font=FONT_MONO, relief="flat", bd=8, wrap="word",
+                selectbackground=ACCENT, selectforeground=TEXT_PRI,
+                undo=True,
+            )
+            sb = tk.Scrollbar(frame, command=txt.yview, bg=CARD,
+                              troughcolor=CARD, activebackground=ACCENT)
+            txt.configure(yscrollcommand=sb.set)
+            sb.pack(side="right", fill="y")
+            txt.pack(fill="both", expand=True)
+            return frame, txt
+
+        in_frame, self.txt_in  = make_textbox(areas)
+        out_frame, self.txt_out = make_textbox(areas)
+
+        in_frame.grid( row=1, column=0, sticky="nsew")
+        out_frame.grid(row=1, column=1, sticky="nsew", padx=(10,0))
+
+        # ── Action buttons ─────────────────────────────────
+        btn_frame = tk.Frame(self, bg=BG)
+        btn_frame.pack(fill="x", padx=28, pady=(6,0))
+
+        btn_cfg = dict(font=("Segoe UI Semibold", 10), relief="flat",
+                       bd=0, cursor="hand2", padx=18, pady=9)
+
+        self.btn_paste = tk.Button(
+            btn_frame, text="📋  Dán từ Clipboard",
+            bg=CARD, fg=TEXT_SEC, activebackground=BORDER,
+            activeforeground=TEXT_PRI, **btn_cfg,
+            command=self._paste_from_clipboard,
+        )
+        self.btn_paste.pack(side="left", padx=(0,8))
+
+        self.btn_convert = tk.Button(
+            btn_frame, text="⚡  Chuyển đổi",
+            bg=ACCENT, fg="#FFFFFF", activebackground="#7080FF",
+            activeforeground="#FFFFFF", **btn_cfg,
+            command=self._convert,
+        )
+        self.btn_convert.pack(side="left", padx=(0,8))
+
+        self.btn_copy = tk.Button(
+            btn_frame, text="📤  Copy kết quả",
+            bg=CARD, fg=TEXT_SEC, activebackground=BORDER,
+            activeforeground=TEXT_PRI, **btn_cfg,
+            command=self._copy_result,
+        )
+        self.btn_copy.pack(side="left", padx=(0,8))
+
+        tk.Button(
+            btn_frame, text="🗑  Xóa",
+            bg=CARD, fg=TEXT_SEC, activebackground=BORDER,
+            activeforeground=TEXT_PRI, **btn_cfg,
+            command=self._clear,
+        ).pack(side="left")
+
+        # ── Status bar ─────────────────────────────────────
+        status_bar = tk.Frame(self, bg=PANEL, pady=6)
+        status_bar.pack(fill="x", side="bottom")
+        tk.Label(status_bar, textvariable=self.status_msg,
+                 font=("Segoe UI", 9), fg=TEXT_SEC, bg=PANEL).pack(side="left", padx=16)
+
+        # Keyboard shortcuts
+        self.bind("<Control-Return>", lambda e: self._convert())
+        self.bind("<Control-v>",      lambda e: self._paste_from_clipboard())
+
+    # ── Actions ────────────────────────────────────────────
+
+    def _paste_from_clipboard(self):
+        try:
+            text = self.clipboard_get()
+            self.txt_in.delete("1.0", "end")
+            self.txt_in.insert("1.0", text)
+            self._set_status(f"Đã dán {len(text)} ký tự từ clipboard", SUCCESS)
+        except Exception:
+            self._set_status("Clipboard trống hoặc không có văn bản", "#FF6B6B")
+
+    def _convert(self):
+        text = self.txt_in.get("1.0", "end-1c")
+        if not text.strip():
+            self._set_status("Chưa có văn bản để chuyển đổi", "#FF6B6B")
+            return
+
+        mode = self.mode.get()
+        if mode == "tcvn3":
+            result = tcvn3_to_unicode(text)
+            label = "TCVN3 → Unicode"
+        else:
+            result = vni_to_unicode(text)
+            label = "VNI → Unicode"
+
+        self.txt_out.delete("1.0", "end")
+        self.txt_out.insert("1.0", result)
+        self._set_status(f"✓  {label}  •  {len(result)} ký tự", SUCCESS)
+        self._flash_button(self.btn_convert)
+
+    def _copy_result(self):
+        result = self.txt_out.get("1.0", "end-1c")
+        if not result.strip():
+            self._set_status("Chưa có kết quả để copy", "#FF6B6B")
+            return
+        self.clipboard_clear()
+        self.clipboard_append(result)
+        self._set_status(f"✓  Đã copy {len(result)} ký tự vào clipboard", SUCCESS)
+        self._flash_button(self.btn_copy)
+
+    def _clear(self):
+        self.txt_in.delete("1.0", "end")
+        self.txt_out.delete("1.0", "end")
+        self._set_status("Đã xóa", TEXT_SEC)
+
+    def _set_status(self, msg, color=None):
+        self.status_msg.set(msg)
+        if color:
+            for w in self.nametowidget(".").winfo_children():
+                pass  # update label color via tag if needed
+
+    def _flash_button(self, btn):
+        orig_bg = btn.cget("bg")
+        btn.config(bg=SUCCESS, fg="#000000")
+        self.after(350, lambda: btn.config(bg=orig_bg, fg="#FFFFFF" if orig_bg==ACCENT else TEXT_SEC))
+
+
+if __name__ == "__main__":
+    app = ConverterApp()
+    app.mainloop()
